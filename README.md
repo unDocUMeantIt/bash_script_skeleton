@@ -186,7 +186,7 @@ development of the scripts, please contact me at <meik.michalke@hhu.de>.
 
 ### Branches
 
-Please note that all development happens in the `develop` branch. Pull requests against the `master`
+Please note that all development happens in the `develop` branch. Pull requests against the `main`
 branch will be rejected, as it is reserved for the current stable release.
 
 
