@@ -3,6 +3,8 @@ title: bash_script_skeleton.sh -- A bash script to write bash scripts
 author: m.eik michalke
 ---
 
+# `bash_script_skeleton.sh` -- A bash script to write bash scripts
+
 I like scripting things that reoccur. There's also a few standard things I want in almost all my scripts:
 
 - use arguments
@@ -10,11 +12,32 @@ I like scripting things that reoccur. There's also a few standard things I want 
 - colored text
 - maybe use a configuration file instead of hard coding variables
 
-I experimented a lot to find solutions that I liked and that are also maintainable, e.g. when I want to change details, fix issues or learned something new. The result of this is `bash_script_skeleton.sh`, my personal tool to start writing new bash scripts. I released it here in the hope that others find it useful as well. It is still under active development, but I do take care to not introduce breaking changes (if only for my own sake).
+I experimented a lot to find solutions that I liked and that are also maintainable, e.&#8239;g. when I want to change details, fix issues or learned something new. The result of this is `bash_script_skeleton.sh`, my personal tool to start writing new bash scripts. I released it here in the hope that others find it useful as well. It is still under active development, but I do take care to not introduce breaking changes (if only for my own sake).
 
 That is something to take care of because `bash_script_skeleton.sh` doesn't just generate a new scripts's skeleton file, but also maintains a small library of bash functions that can be sourced by its generated scripts to provide standard features, like coloring text or writing/updating a configuration file. I call these files *dependencies* of my scripts, as they wouldn't run without them. Therefore, I try hard not to break these functions with updates. I sometimes add new features to them or improve their behavior, but I'd rather add an all new function than breaking an existing one.
 
 This `README` explains how to use the script, its internal workflow and what it expects. It might take some time to understand how to use it, but it can then save a lot more time with each new script that you write based on one of its generated skeletons.
+
+
+## Installation
+
+You could simply copy `bash_script_skeleton.sh` and make it executable to use it. You should place it somewhere in your `PATH`, otherwise you'd have to adjust all generated scripts so they can find it (see the dependencies section below).
+
+However, I'd recommend to clone this repo to be able to get updates and fixes, and use a symlink. E.&#8239;g., if `~/bin` is in your `PATH`:
+
+```bash
+# replace YOUR_DESIRED_LOCATION with the path you want to clone to
+git clone https://github.com/unDocUMeantIt/bash_script_skeleton.git "${YOUR_DESIRED_LOCATION}"
+chmod +x "${YOUR_DESIRED_LOCATION}"/*.sh
+ln -s "${YOUR_DESIRED_LOCATION}"/*.sh ~/bin
+```
+
+To look for updates from time to time:
+
+```bash
+cd "${YOUR_DESIRED_LOCATION}"
+git pull
+```
 
 ## Usage
 
@@ -37,7 +60,7 @@ Typically, when I want to write a new script, I initialize it like this:
 bash_script_skeleton.sh -n <name of script>.sh -C -L GPLv3 -k
 ```
 
-The `-n` argument takes the name of the script without the path. I usually put all of my scripts in the same directory, so the default path is set in the configuration file, it can be overruled with `-p` if desired. You can also have the script written to one directory (e.g., a private cloud share) and have a symlink to `~/bin` created via `-l`.
+The `-n` argument takes the name of the script without the path. I usually put all of my scripts in the same directory, so the default path is set in the configuration file, it can be overruled with `-p` if desired. You can also have the script written to one directory (e.&#8239;g., a private cloud share) and have a symlink to `~/bin` created via `-l`.
 
 The `-C` arguments adds some stuff to the script skeleton to enable the use of a configuration file. The default path for those is also pre-configured and can be overruled with `-d`. The config file is named `<name of script>.conf` unless changed via `-c`.
 
@@ -67,7 +90,7 @@ appendconfig "${CONFIGFILE}" "TARGET_DIR" "\"/tmp\"" "autoconfig"
 
 The `appendconfig` function will search `${CONFIGFILE}` for the variable each time the script is called, and if no such variable can be found, it will be appended to the config file with the script's default value. Existing variables will not be touched. Since `appendconfig` ensures the availability of all variables the script defines, it is simple to add new variables to your configuration with updated versions of your script.
 
-Of course you can still define variables directly in the script. But if you plan on using a script on different machines and, e.g., paths are not the same, it is much more flexible to define this in a separate file.
+Of course you can still define variables directly in the script. But if you plan on using a script on different machines and, e.&#8239;g., paths are not the same, it is much more flexible to define this in a separate file.
 
 If you look at the config file for `bash_script_skeleton.sh`, specifically the variables dealing with the license info, you can see that using arrays is also an option you might consider. For instance, if you would like to define various profiles for a script, you could do this using arrays.
 
@@ -85,7 +108,7 @@ You can find these files in the directory `~/.config/bash_scripts_${USER}/shared
 
 ### Text colors and layout
 
-The library `colors_basic.sh` defines some basic colors and short functions to color text. These functions all begin with an undersccore folowed by the color or layout (e.g., bold, italic, underscored). You will most likely use them with `echo -e`. This example prints text in blue letters:
+The library `colors_basic.sh` defines some basic colors and short functions to color text. These functions all begin with an undersccore folowed by the color or layout (e.&#8239;g., bold, italic, underscored). You will most likely use them with `echo -e`. This example prints text in blue letters:
 
 ```bash
 echo -e "$(_blue "This is an example")"
@@ -126,7 +149,7 @@ call_something \
 
 Like said, all scripts come with a usage message. I like that one structured and colored as well, it's nice to read and easier to find what you are looking for. So I wrote a `usage` function that over time became quite versatile. Depending on what section of the usage message you want to write, it produces a different layout. It will usually start printing from the start of a line with a defined indentation, to make sure that all scripts' usage messages have a very similar appearance to also improve their comprehensability.
 
-An initiated script will already include an example usage message for you to study and adjust. In general, it is combined by multiple calls to `usage`, each with a definition of the section type as its second argument, and then one or more arguments (depending on the section type), i.e., the text you want to be shown.
+An initiated script will already include an example usage message for you to study and adjust. In general, it is combined by multiple calls to `usage`, each with a definition of the section type as its second argument, and then one or more arguments (depending on the section type), i.&#8239;e., the text you want to be shown.
 
 For instance, to document the argument `-e` with the explanation `show an example`, you would add:
 
@@ -140,7 +163,7 @@ Notice the empty string in the middle? That is because the `opt` section is also
 
 - `usage` to show the initial usage statement (you can probably leave that as is, it will use the file name by default),
 - `section` to add section headlines,
-- `default` to show the default values if a flag is not used (e.g., the value of a variable from the config file), or
+- `default` to show the default values if a flag is not used (e.&#8239;g., the value of a variable from the config file), or
 - `par` to document flag values that act like a sub-flag parameter.
 
 There's also a `config` section that prints the `--config`, `--edit`, and `--dependencies` messages, as well as the path to the config file.
@@ -159,7 +182,7 @@ We won't be covering all of the functions in detail here, as they all have their
 - `skip` to indicate if your script is skipping something
 - `write_new_file` to write content to a file with control for its previous existence
 - `edit_file` to open files for editing
-- `function_body` to print the content of a bash function, e.g. to write your own functions and add them to the function library for use in other scripts
+- `function_body` to print the content of a bash function, e.&#8239;g. to write your own functions and add them to the function library for use in other scripts
 
 
 ### Activating these functions in your scripts
