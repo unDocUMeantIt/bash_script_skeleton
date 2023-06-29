@@ -73,7 +73,7 @@ Finally, `-k` opens the new script in the configured editor. A script that was i
 
 When first called, `bash_script_skeleton.sh` will automatically initialize its own configuration file. It defines a number of variables that are used by the script already in the usage message, so they must be available even if you just want to see the message. So if you no longer want to use this script and purge its files, you'll also need to remove the config file manually. Its path is always shown at the end of the usage message, by default `bash_script_skeleton.sh`  puts all config files (also for genrated scripts) below `~/.config/bash_scripts_${USER}/`.
 
-In newly generated scripts, the section dealing with configuration files is present but commented out. You have to uncomment the block starting with `## poor man's configuration` first in order to actually use it. This is to prevent initializing a configuration file with example variables you will never use.
+In newly generated scripts, the section dealing with configuration files is present but commented out. You have to uncomment the block between `### BEGIN CONFIG SECTION ###` and `### END CONFIG SECTION ###` first in order to actually use it. This is to prevent initializing a configuration file with example variables you will never use.
 
 After ensuring the target directory exists, the configuration is maintained by one of the helper functions called `appendconfig`. It usually takes four values:
 
