@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2023-06-25"
+SCRIPT_VERSION="2023-07-03"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -1621,6 +1621,8 @@ if ${WITHCONFIG} ; then
   DEFAULT_DEPENDENCIES+=("func_appendconfig.sh")
   CONFINFO="\${CONFIGFILE}"
   CONFEDIT="--config"
+  CONFPROFILEHAVE="
+# HAVE_PROFILE=false"
   CONFPROFILEUSAGE="
         \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
                 \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
@@ -1651,6 +1653,7 @@ else
   CONFFUNCLOAD="# "
   CONFINFO=""
   CONFEDIT=""
+  CONFPROFILEHAVE=""
   CONFPROFILEUSAGE=""
   CONFPROFILEOPTSET=""
   CONFPROFILEOPTCHECK=""
@@ -1680,7 +1683,7 @@ ${LICSTUB}
 ### BEGIN SCRIPT INITIALIZATION ###
 ## initialize hard coded variables here
 # EXAMPLE=false
-# BASHHINTS=false
+# BASHHINTS=false${CONFPROFILEHAVE}
 
 # DATE=\"\$(date +%Y-%m-%d_%H-%M-%S)\"
 
