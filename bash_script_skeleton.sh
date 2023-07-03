@@ -1623,6 +1623,7 @@ if ${WITHCONFIG} ; then
   CONFEDIT="--config"
   CONFPROFILEUSAGE="
         \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
+                \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
                 \${PROFILES}\n"
   CONFPROFILEOPTSET="p:"
   CONFPROFILEOPTCHECK="
