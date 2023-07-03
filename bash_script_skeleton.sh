@@ -1596,12 +1596,12 @@ if ${WITHCONFIG} ; then
 #appendconfig \"\${CONFIGFILE}\" \"USERHOME\" \"\\\"/home/\\\${USERNAME}\\\"\" \"autoconfig\"
 #appendconfig \"\${CONFIGFILE}\" \"BSSHAREDIR\" \"\\\"\${BSSHAREDIR}\\\"\" \"autoconfig\"
 #appendconfig \"\${CONFIGFILE}\" \\
-#  \"declare -A EXAMPLEARRAY\" \\
+#  \"declare -A PRF_EXAMPLEARRAY\" \\
 #  \"(\\n  [\\\"example\\\"]=\\\"/tmp/example\\\"\\n)\\n\\n\" \\
 #  \"autoconfig\" \\
 #  \"add a comment\"
 #appendconfig \"\${CONFIGFILE}\" \\
-#  \"declare -A EXAMPLEARRAY2\" \\
+#  \"declare -A PRF_EXAMPLEARRAY2\" \\
 #  \"(\\n  [\\\"example\\\"]=\\\"foo\\\"\\n)\\n\\n\" \\
 #  \"autoconfig\" \\
 #  \"another comment\"
@@ -1609,10 +1609,10 @@ if ${WITHCONFIG} ; then
 #. \"\${CONFIGFILE}\"
 #
 ## if you want to use config profiles via arrays with identical keys
-#PROFILES=\$(for i in \${!EXAMPLEARRAY[@]} ; do
+#PROFILES=\$(for i in \${!PRF_EXAMPLEARRAY[@]} ; do
 #    echo -e \"\$(usage par \"\${i}\")\"
-#    echo -e \"\$(usage par_l \"path:          \$(path_exists -d \"\${EXAMPLEARRAY[\"\${i}\"]}\" show)\")\"
-#    echo -e \"\$(usage par_l \"foo:           \${EXAMPLEARRAY2[\"\${i}\"]}\")\"
+#    echo -e \"\$(usage par_l \"path:          \$(path_exists -d \"\${PRF_EXAMPLEARRAY[\"\${i}\"]}\" show)\")\"
+#    echo -e \"\$(usage par_l \"foo:           \${PRF_EXAMPLEARRAY2[\"\${i}\"]}\")\"
 #done)
 #
 # edit_file \"\${CONFIGFILE}\" \"--config\" \"\$1\" \"unable to edit configuration file!\"
@@ -1621,11 +1621,39 @@ if ${WITHCONFIG} ; then
   DEFAULT_DEPENDENCIES+=("func_appendconfig.sh")
   CONFINFO="\${CONFIGFILE}"
   CONFEDIT="--config"
+  CONFPROFILEUSAGE="
+        \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
+                \${PROFILES}\n"
+  CONFPROFILEOPTSET="p:"
+  CONFPROFILEOPTCHECK="
+        p) CONFPROFILE=\"\${OPTARG}\" >&2
+           [[ \" \${!PRF_EXAMPLEARRAY[@]} \" =~ \" \${CONFPROFILE} \" ]] || error \"invalid profile: \${CONFPROFILE}\"
+           HAVE_PROFILE=true >&2
+           ;;"
+  CONFPROFILESELECT="
+## use default profile if only a single one is defined
+# if ! \${HAVE_PROFILE} ; then
+#     if [[ \"\${#PRF_EXAMPLEARRAY[@]}\" -gt 1 ]] ; then
+#         error \"you must select a profile via \$(_opt \"-p\")!\"
+#     else
+#         CONFPROFILE=\"\${!PRF_EXAMPLEARRAY[@]}\"
+#         HAVE_PROFILE=true >&2
+#     fi
+# fi
+#
+## set variable value from chosen profile
+# EXAMPLEVAR=\"\${PRF_EXAMPLEARRAY[\"\${CONFPROFILE}\"]}\"
+# EXAMPLEVAR2=\"\${PRF_EXAMPLEARRAY2[\"\${CONFPROFILE}\"]}\"
+"
 else
   CONFSTUB=""
   CONFFUNCLOAD="# "
   CONFINFO=""
   CONFEDIT=""
+  CONFPROFILEUSAGE=""
+  CONFPROFILEOPTSET=""
+  CONFPROFILEOPTCHECK=""
+  CONFPROFILESELECT=""
 fi
 
 if ${WITHLICENSE} ; then
@@ -1677,10 +1705,7 @@ if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
   echo -e \"
 \$(usage usage \"\${0##*/}\" \"[OPTIONS]\")
 
-    \$(usage sect \"OPTIONS\")
-        \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
-                \${PROFILES}
-
+    \$(usage sect \"OPTIONS\")${CONFPROFILEUSAGE}
         \$(usage opt \"-e\" \"<path>\" \"example option\")
                 \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
         \$(usage opt \"-h\" \"\" \"call ~/bin/bash_hints.sh\")
@@ -1693,12 +1718,8 @@ fi
 ### END USAGE SECTION ###
 
 # get the options
-while getopts \":p:e:h\" OPT; do
-    case \$OPT in
-        p) CONFPROFILE=\"\${OPTARG}\" >&2
-           [[ \" \${!EXAMPLEARRAY[@]} \" =~ \" \${CONFPROFILE} \" ]] || error \"invalid profile: \${CONFPROFILE}\"
-           HAVE_PROFILE=true >&2
-           ;;
+while getopts \":${CONFPROFILEOPTSET}e:h\" OPT; do
+    case \$OPT in${CONFPROFILEOPTCHECK}
         e) EXAMPLE=true >&2
            USERHOME=\"\${OPTARG}\" >&2
            ;;
@@ -1724,7 +1745,7 @@ done
 ## \"-u\" will not actually create a file but just the name
 # TEMPFILE=\"\$(mktemp -u \"/tmp/${SCRIPTNAME%.*}.XXXXXXXXXX\")\"
 # trap \"rm -f \${TEMPFILE}\" EXIT
-
+${CONFPROFILESELECT}
 # if ! \${EXAMPLE} ; then
 #     error \"you \$(_bold \"must\") set \$(_orange_on_grey \"-e\")!\"
 # fi
