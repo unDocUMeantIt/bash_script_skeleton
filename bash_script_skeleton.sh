@@ -1609,7 +1609,7 @@ if ${WITHCONFIG} ; then
 #. \"\${CONFIGFILE}\"
 #
 ## if you want to use config profiles via arrays with identical keys
-#PROFILES=\$(for i in \${!PRF_EXAMPLEARRAY[@]} ; do
+#PROFILES=\$(for i in \"\${!PRF_EXAMPLEARRAY[@]}\" ; do
 #    echo -e \"\$(usage par \"\${i}\")\"
 #    echo -e \"\$(usage par_l \"path:          \$(path_exists -d \"\${PRF_EXAMPLEARRAY[\"\${i}\"]}\" show)\")\"
 #    echo -e \"\$(usage par_l \"foo:           \${PRF_EXAMPLEARRAY2[\"\${i}\"]}\")\"
