@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2023-07-03"
+SCRIPT_VERSION="2025-03-24"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -1142,13 +1142,13 @@ $(colors_basic --colors | sed -e 's/^/    # /')
 # use check_shared_script to add your own shared functions;
 # keep in mind they need to support both ^(-h|--help)$ and ^(-v|--version)$ parameters!
 [[ \"\$1\" =~ ^(--dependencies)$ ]] && {
-    for i in \${!DEPENDENCIES[@]} ; do
+    for i in \"\${!DEPENDENCIES[@]}\" ; do
       echo \"\${i} (\${DEPENDENCIES[\${i}]%% >=*} >= \${DEPENDENCIES[\${i}]##*>= })\"
     done
     exit 0
 }
 # now source the files needed in this script
-for i in \${!DEPENDENCIES[@]} ; do
+for i in \"\${!DEPENDENCIES[@]}\" ; do
   [[ -f \"\${i}\" ]] \\\\
     || bash_script_skeleton.sh -I -s \"${BSSHAREDIR}\" || exit 1
   . \"\${i}\" || exit 1
