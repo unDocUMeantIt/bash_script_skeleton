@@ -1095,7 +1095,7 @@ dependency_section () {
     return;
   }
   [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "1"
+    echo "2"
     return;
   }
   declare -n DEP_ARRAY=$1;
