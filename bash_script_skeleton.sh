@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2025-03-24"
+SCRIPT_VERSION="2025-03-26"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -749,7 +749,7 @@ path_exists () {
 
 usage () {
   [[ "$1" =~ ^(-h|--help)$ || "$1" == "" ]] && {
-    echo "usage: usage [section] [arg1] [arg2] [arg3] [arg4] [arg5]
+    echo "usage: usage [section] [arg1] [arg2] [arg3] [arg4] [arg5] [arg6]
     
     [section]:  one of
                 - \"usage\":   usage info with section title (2 args)
@@ -818,7 +818,18 @@ usage () {
                 if par_l:      a fifth line
                 if par_n:      a third line
                 if conf:       the argument to edit the script file itself (e.g., \"--edit\") or \"\"
-    
+    [arg6]:     if usage:      ignored
+                if opt:        ignored
+                if sect:       ignored
+                if default:    ignored
+                if info:       ignored
+                if note:       ignored
+                if par:        ignored
+                if par_i:      ignored
+                if par_l:      ignored
+                if par_n:      ignored
+                if conf:       the argument to call internal script functions (e.g., \"--function\") or \"\"
+
     you can set the following environment variables to use other than the default columns (in brackets):
       - USG_OPT: number of characters reserved for option names (4)
       - USG_ARG: number of characters reserved for option argument names (10)
@@ -826,7 +837,7 @@ usage () {
     return;
   }
   [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "7"
+    echo "8"
     return;
   }
   local SECT="$1"
@@ -835,6 +846,7 @@ usage () {
   local ARG3="$4"
   local ARG4="$5"
   local ARG5="$6"
+  local ARG5="$7"
 
   local IS_NUM='^[0-9]+$'
   if ! [[ ${USG_OPT} =~ ${IS_NUM} ]] ; then
@@ -928,6 +940,9 @@ usage () {
                   esac
               done
               unset INFO_OPTIONS
+          fi
+          if [[ "${ARG6}" != "" ]] ; then
+              echo -e "\r\n$(printf "%${USG_CONFDEPVAR}s")$(_info "call") $(_opt "${ARG6} <function> [args]") $(_info "to call an internal function (e.g. for usage info).")"
           fi
           if [[ "${ARG1}" != "" ]] ; then
               if [[ "${ARG4}" != "" ]] ; then
@@ -1087,7 +1102,7 @@ dependency_section () {
     echo "creates a dependency section from an array
 
   usage: dependency_section [array] [dir] [version]
-  
+
   [array]:   an array of active dependencies (path names)
   [dir]:     the directory prefix for shared files
   [version]: the version of bash_script_skeleton.sh
@@ -1702,6 +1717,16 @@ $(dependency_section DEFAULT_DEPENDENCIES "\${BSSHAREDIR}" "${SCRIPT_VERSION}")
 ${CONFSTUB}
 edit_file \"\${0}\" \"--edit\" \"\$1\" \"unable to edit script file!\"
 
+[[ \"\$1\" =~ ^(--function)$ ]] && {
+    [[ \"\${2}\" == \"\" ]] && error \"\$(_orange \"--function\") must be used with a function name!\"
+    [[ \"\$(compgen -A function)\" =~ \"\${2}\" ]] \
+        || error \"function \$(_orange \"\${2}\") appears to be undefined!\"
+    shift 1
+    eval \"\$@\"
+    exit 0
+}
+
+
 ### BEGIN USAGE SECTION ###
 if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
   USG_OPT=4  # spaces before option names
@@ -1714,7 +1739,7 @@ if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
                 \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
         \$(usage opt \"-h\" \"\" \"call ~/bin/bash_hints.sh\")
 
-    \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\")
+    \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\" \"--function\")
 \"
 # see also \$(usage info ...) and \$(usage par ...)
   exit 0
