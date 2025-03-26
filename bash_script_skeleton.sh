@@ -846,7 +846,7 @@ usage () {
   local ARG3="$4"
   local ARG4="$5"
   local ARG5="$6"
-  local ARG5="$7"
+  local ARG6="$7"
 
   local IS_NUM='^[0-9]+$'
   if ! [[ ${USG_OPT} =~ ${IS_NUM} ]] ; then
