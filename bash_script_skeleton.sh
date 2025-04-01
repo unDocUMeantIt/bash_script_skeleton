@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016-2023 Meik Michalke <meik.michalke@hhu.de>
+# Copyright 2016-2025 Meik Michalke <meik.michalke@hhu.de>
 #
 # bash_script_skeleton.sh is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2025-03-31"
+SCRIPT_VERSION="2025-04-01"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -1101,14 +1101,20 @@ print_stderr () {
 }
 
 
-check_key_in_all_arrays () {
+check_key_in_arrays () {
   [[ "$1" =~ ^(-h|--help)$ || "$1" == "" ]] && {
-    echo "examines all [arrays] and fails if [key] is undefined in any of them
+    echo "looks for [key] in all [arrays] and either fails if undefined or returns true/false
 
-    usage: check_key_in_all_arrays [key] [arrays] (debug)
+    usage: check_key_in_arrays [key] [arrays] (mode) (bool) (debug)
 
     [key]:     the key to check for in all arrays
     [arrays]:  an array of array names to iterate over
+    (mode):    either \"all\" (sucess if [key] in all arrays) or \"any\"
+               (success if [key] in any array)
+               default: any
+    (bool):    logical, if true returns true/false depending on check results,
+               if false fails with an error if check is not successful
+               default: true
     (debug):   logical (true/false) to toggle debug information to be shown
                default: false
     "
@@ -1119,67 +1125,70 @@ check_key_in_all_arrays () {
     return;
   }
   local MISSING_CONF=""
-  local KEY=$1
-  declare -n ARRAYS=$2
-  local DEBUG=$3
-  [[ ${DEBUG} == "" ]] \
-    && DEBUG=false
-
-  ${DEBUG} && {
-    print_stderr "check_key_in_all_arrays():"
-    print_stderr "  MISSING_CONF=${MISSING_CONF}"
-    print_stderr "  KEY=${KEY}"
-    print_stderr "  ARRAYS=${ARRAYS[*]}"
-  }
-
-  for i in "${ARRAYS[@]}" ; do
-    declare -n TMP_ARRAY=$i
-    [[ " ${!TMP_ARRAY[@]} " =~ " ${KEY} " ]] \
-      || MISSING_CONF="${MISSING_CONF} ${i}"
-  done
-  [[ "${MISSING_CONF}" == "" ]] \
-    || error "missing \"${KEY}\" in configuration of:\n ${MISSING_CONF}"
-}
-
-check_key_in_any_array () {
-  [[ "$1" =~ ^(-h|--help)$ || "$1" == "" ]] && {
-    echo "examines all [arrays], looks for [key] and returns true or false if found in any
-
-    usage: check_key_in_any_array [key] [arrays] (debug)
-
-    [key]:     the key to check for in all arrays
-    [arrays]:  an array of array names to iterate over
-    (debug):   logical (true/false) to toggle debug information to be shown
-    "
-    return;
-  }
-  [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "1"
-    return;
-  }
   local ANY_MATCH=false
   local KEY=$1
   declare -n ARRAYS=$2
-  local DEBUG=$3
+  local MODE=$3
+  [[ ${MODE} == "" ]] \
+    && MODE="any"
+  local BOOL=$4
+  [[ ${BOOL} == "" ]] \
+    && BOOL=true
+  local DEBUG=$5
   [[ ${DEBUG} == "" ]] \
     && DEBUG=false
 
   ${DEBUG} && {
-    print_stderr "check_key_in_any_array():"
+    print_stderr "check_key_in_arrays():"
+    print_stderr "  MISSING_CONF=${MISSING_CONF}"
     print_stderr "  ANY_MATCH=${ANY_MATCH}"
     print_stderr "  KEY=${KEY}"
     print_stderr "  ARRAYS=${ARRAYS[*]}"
+    print_stderr "  MODE=${MODE}"
+    print_stderr "  BOOL=${BOOL}"
   }
 
   for i in "${ARRAYS[@]}" ; do
+    if [[ "${MODE}" == "any" ]] && ${ANY_MATCH} ; then
+      break
+    fi
     declare -n TMP_ARRAY=$i
-    [[ " ${!TMP_ARRAY[@]} " =~ " ${KEY} " ]] \
-      && ANY_MATCH=true
+    ${DEBUG} && {
+      print_stderr "  TMP_ARRAY=${!TMP_ARRAY[*]}"
+    }
+    if [[ " ${!TMP_ARRAY[@]} " =~ " ${KEY} " ]] ; then
+      ANY_MATCH=true
+      ${DEBUG} && {
+        print_stderr "  ANY_MATCH=${ANY_MATCH}"
+      }
+    else
+      MISSING_CONF="${MISSING_CONF} ${i}"
+      ${DEBUG} && {
+        print_stderr "  MISSING_CONF=${MISSING_CONF}"
+      }
+    fi
   done
-  if ${ANY_MATCH} ; then
-    true
+
+  if [[ "${MODE}" == "any" ]] ; then
+    if ${BOOL} ; then
+      ${ANY_MATCH}
+    else
+      ${ANY_MATCH} \
+        || error "missing \"${KEY}\" in all arrays!"
+    fi
+  elif [[ "${MODE}" == "all" ]] ; then
+    if ${BOOL} ; then
+      if [[ "${MISSING_CONF}" == "" ]] ; then
+        true
+      else
+        false
+      fi
+    else
+      [[ "${MISSING_CONF}" == "" ]] \
+        || error "missing \"${KEY}\" in configuration of:\n ${MISSING_CONF}"
+    fi
   else
-    false
+    error "undefined mode: ${MODE}"
   fi
 }
 
@@ -1213,7 +1222,7 @@ dependency_section () {
     return;
   }
   [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "3"
+    echo "4"
     return;
   }
   declare -n DEP_ARRAY=$1;
@@ -1252,8 +1261,7 @@ $(colors_basic --colors | sed -e 's/^/    # /')
     $([[ " ${DEP_ARRAY[@]} " =~ "func_appendconfig.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_appendconfig.sh\"]=\"appendconfig >= $(appendconfig --version)\"
     $([[ " ${DEP_ARRAY[@]} " =~ "func_check_tool.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_check_tool.sh\"]=\"check_tool >= $(check_tool --version)\"
     $([[ " ${DEP_ARRAY[@]} " =~ "func_check_shared_script.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_check_shared_script.sh\"]=\"check_shared_script >= $(check_shared_script --version)\"
-    $([[ " ${DEP_ARRAY[@]} " =~ "func_check_key_in_any_array.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_check_key_in_any_array.sh\"]=\"check_key_in_any_array >= $(check_key_in_any_array --version)\"
-    $([[ " ${DEP_ARRAY[@]} " =~ "func_check_key_in_all_arrays.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_check_key_in_all_arrays.sh\"]=\"check_key_in_all_arrays >= $(check_key_in_all_arrays --version)\"
+    $([[ " ${DEP_ARRAY[@]} " =~ "func_check_key_in_arrays.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_check_key_in_arrays.sh\"]=\"check_key_in_arrays >= $(check_key_in_arrays --version)\"
     $([[ " ${DEP_ARRAY[@]} " =~ "func_dependency_section.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_dependency_section.sh\"]=\"dependency_section >= $(dependency_section --version)\"
     $([[ " ${DEP_ARRAY[@]} " =~ "func_function_body.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_function_body.sh\"]=\"function_body >= $(function_body --version)\"
     $([[ " ${DEP_ARRAY[@]} " =~ "func_link_script.sh " ]] || echo "# ")[\"${BSSHAREDIR}/func_link_script.sh\"]=\"link_script >= $(link_script --version)\"
@@ -1444,9 +1452,18 @@ LIC_NAMES=$(for i in ${!LICENSES[@]} ; do
     echo -e "$(usage info "- $(_blue "${i}")")"
 done)
 
+[[ "$1" =~ ^(--function)$ ]] && {
+    [[ "${2}" == "" ]] && error "$(_orange "--function") must be used with a function name!"
+    [[ "$(compgen -A function)" =~ "${2}" ]] \
+        || error "function $(_orange "${2}") appears to be undefined!"
+    shift 1
+    eval "$@"
+    exit 0
+}
+
 OLDWD="$(pwd)"
 
-if [[ $1 == "" ]] ; then
+if [[ "$1" =~ ^(-h|--help)$ || $1 == "" ]] ; then
     echo -e "
 $(usage usage "${0##*/}" "[OPTIONS]")
 
@@ -1481,7 +1498,7 @@ $(usage usage "${0##*/}" "[OPTIONS]")
     $(usage opt "-I" ""       "only initialize basic shared files in dir as set by $(_opt "-s")")
     $(usage opt "-V" ""       "show version information of basic shared files available in this script")
     
-    $(usage conf "${CONFIGFILE}" "--version" "" "--config" "--edit")
+    $(usage conf "${CONFIGFILE}" "--version" "" "--config" "--edit" "--function")
 "
   exit 0
 fi
@@ -1611,27 +1628,26 @@ init_shared () {
     echo "5"
     return;
   }
-  check_shared_script "$1" "colors_basic.sh"                 "function" "colors_basic"            "${SHEBANG}" "${BASICCOLORSEXTRA}"
-  check_shared_script "$1" "func_alldone.sh"                 "function" "alldone"                 "${SHEBANG}"
-  check_shared_script "$1" "func_appendconfig.sh"            "function" "appendconfig"            "${SHEBANG}"
-  check_shared_script "$1" "func_check_shared_script.sh"     "function" "check_shared_script"     "${SHEBANG}"
-  check_shared_script "$1" "func_check_tool.sh"              "function" "check_tool"              "${SHEBANG}"
-  check_shared_script "$1" "func_check_key_in_any_array.sh"  "function" "check_key_in_any_array"  "${SHEBANG}"
-  check_shared_script "$1" "func_check_key_in_all_arrays.sh" "function" "check_key_in_all_arrays" "${SHEBANG}"
-  check_shared_script "$1" "func_print_stderr.sh"            "function" "print_stderr"            "${SHEBANG}"
-  check_shared_script "$1" "func_dependency_section.sh"      "function" "dependency_section"      "${SHEBANG}"
-  check_shared_script "$1" "func_edit_file.sh"               "function" "edit_file"               "${SHEBANG}"
-  check_shared_script "$1" "func_error.sh"                   "function" "error"                   "${SHEBANG}"
-  check_shared_script "$1" "func_function_body.sh"           "function" "function_body"           "${SHEBANG}"
-  check_shared_script "$1" "func_link_script.sh"             "function" "link_script"             "${SHEBANG}"
-  check_shared_script "$1" "func_min_version.sh"             "function" "min_version"             "${SHEBANG}"
-  check_shared_script "$1" "func_mkmissingdir.sh"            "function" "mkmissingdir"            "${SHEBANG}"
-  check_shared_script "$1" "func_path_exists.sh"             "function" "path_exists"             "${SHEBANG}"
-  check_shared_script "$1" "func_skip.sh"                    "function" "skip"                    "${SHEBANG}"
-  check_shared_script "$1" "func_usage.sh"                   "function" "usage"                   "${SHEBANG}"
-  check_shared_script "$1" "func_warning.sh"                 "function" "warning"                 "${SHEBANG}"
-  check_shared_script "$1" "func_write_new_file.sh"          "function" "write_new_file"          "${SHEBANG}"
-  check_shared_script "$1" "func_yesno.sh"                   "function" "yesno"                   "${SHEBANG}"
+  check_shared_script "$1" "colors_basic.sh"              "function" "colors_basic"         "${SHEBANG}" "${BASICCOLORSEXTRA}"
+  check_shared_script "$1" "func_alldone.sh"              "function" "alldone"              "${SHEBANG}"
+  check_shared_script "$1" "func_appendconfig.sh"         "function" "appendconfig"         "${SHEBANG}"
+  check_shared_script "$1" "func_check_shared_script.sh"  "function" "check_shared_script"  "${SHEBANG}"
+  check_shared_script "$1" "func_check_tool.sh"           "function" "check_tool"           "${SHEBANG}"
+  check_shared_script "$1" "func_check_key_in_arrays.sh"  "function" "check_key_in_arrays"  "${SHEBANG}"
+  check_shared_script "$1" "func_print_stderr.sh"         "function" "print_stderr"         "${SHEBANG}"
+  check_shared_script "$1" "func_dependency_section.sh"   "function" "dependency_section"   "${SHEBANG}"
+  check_shared_script "$1" "func_edit_file.sh"            "function" "edit_file"            "${SHEBANG}"
+  check_shared_script "$1" "func_error.sh"                "function" "error"                "${SHEBANG}"
+  check_shared_script "$1" "func_function_body.sh"        "function" "function_body"        "${SHEBANG}"
+  check_shared_script "$1" "func_link_script.sh"          "function" "link_script"          "${SHEBANG}"
+  check_shared_script "$1" "func_min_version.sh"          "function" "min_version"          "${SHEBANG}"
+  check_shared_script "$1" "func_mkmissingdir.sh"         "function" "mkmissingdir"         "${SHEBANG}"
+  check_shared_script "$1" "func_path_exists.sh"          "function" "path_exists"          "${SHEBANG}"
+  check_shared_script "$1" "func_skip.sh"                 "function" "skip"                 "${SHEBANG}"
+  check_shared_script "$1" "func_usage.sh"                "function" "usage"                "${SHEBANG}"
+  check_shared_script "$1" "func_warning.sh"              "function" "warning"              "${SHEBANG}"
+  check_shared_script "$1" "func_write_new_file.sh"       "function" "write_new_file"       "${SHEBANG}"
+  check_shared_script "$1" "func_yesno.sh"                "function" "yesno"                "${SHEBANG}"
 }
 
 func_version () {
@@ -1656,8 +1672,7 @@ func_version () {
       "colors_basic" \
       "alldone" \
       "appendconfig" \
-      "check_key_in_all_arrays" \
-      "check_key_in_any_array" \
+      "check_key_in_arrays" \
       "check_shared_script" \
       "check_tool" \
       "edit_file" \
@@ -1705,6 +1720,7 @@ DEFAULT_DEPENDENCIES=(
     "func_edit_file.sh"
     "func_error.sh"
     "func_alldone.sh"
+    "func_print_stderr.sh"
     "func_mkmissingdir.sh"
     "func_path_exists.sh"
     "func_usage.sh"
@@ -1811,7 +1827,8 @@ ${LICSTUB}
 ### BEGIN SCRIPT INITIALIZATION ###
 ## initialize hard coded variables here
 # EXAMPLE=false
-# BASHHINTS=false${CONFPROFILEHAVE}
+# BASHHINTS=false
+# DEBUG=false${CONFPROFILEHAVE}
 
 # DATE=\"\$(date +%Y-%m-%d_%H-%M-%S)\"
 
@@ -1852,6 +1869,8 @@ if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
                 \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
         \$(usage opt \"-h\" \"\" \"call ~/bin/bash_hints.sh\")
 
+        \$(usage opt \"-D\" \"\" \"enable debug mode for more information from functions\")
+
     \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\" \"--function\")
 \"
 # see also \$(usage info ...) and \$(usage par ...)
@@ -1860,12 +1879,14 @@ fi
 ### END USAGE SECTION ###
 
 # get the options
-while getopts \":${CONFPROFILEOPTSET}e:h\" OPT; do
+while getopts \":${CONFPROFILEOPTSET}e:hD\" OPT; do
     case \$OPT in${CONFPROFILEOPTCHECK}
         e) EXAMPLE=true >&2
            USERHOME=\"\${OPTARG}\" >&2
            ;;
         h) BASHHINTS=true >&2
+           ;;
+        D) DEBUG=true >&2
            ;;
         \\?)
            error \"Invalid option: \$(_bold \"-\${OPTARG}\")\" >&2

@@ -1,6 +1,6 @@
 #!/bin/bash
 [[ "$1" =~ ^(--version)$ ]] && { 
-    echo "2025-03-31";
+    echo "2025-04-01";
     exit 0
 };
 
@@ -88,8 +88,7 @@ declare -A DEPENDENCIES=(
     ["${BSSHAREDIR}/func_appendconfig.sh"]="appendconfig >= 8"
     ["${BSSHAREDIR}/func_check_tool.sh"]="check_tool >= 3"
     ["${BSSHAREDIR}/func_check_shared_script.sh"]="check_shared_script >= 10"
-    ["${BSSHAREDIR}/func_check_key_in_any_array.sh"]="check_key_in_any_array >= 1"
-    ["${BSSHAREDIR}/func_check_key_in_all_arrays.sh"]="check_key_in_all_arrays >= 1"
+    ["${BSSHAREDIR}/func_check_key_in_arrays.sh"]="check_key_in_arrays >= 1"
     ["${BSSHAREDIR}/func_dependency_section.sh"]="dependency_section >= 1"
     ["${BSSHAREDIR}/func_function_body.sh"]="function_body >= 2"
     ["${BSSHAREDIR}/func_link_script.sh"]="link_script >= 5"
