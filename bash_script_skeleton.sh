@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2025-04-01"
+SCRIPT_VERSION="2026-07-21"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -29,6 +29,7 @@ LINKSCRIPT=false
 EDITSCRIPT=false
 INITSHARED=false
 CSSVERSIONINFO=false
+SHORTOPTIONS=false
 
 colors_basic () {
   [[ "$1" =~ ^(-h|--help)$ ]] && {
@@ -831,13 +832,14 @@ usage () {
                 if conf:       the argument to call internal script functions (e.g., \"--function\") or \"\"
 
     you can set the following environment variables to use other than the default columns (in brackets):
-      - USG_OPT: number of characters reserved for option names (4)
+      - USG_OPT: number of spaces before option names (4)
+      - USG_FLG: number of characters reserved for option names (2)
       - USG_ARG: number of characters reserved for option argument names (10)
     "
     return;
   }
   [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "8"
+    echo "9"
     return;
   }
   local SECT="$1"
@@ -852,10 +854,13 @@ usage () {
   if ! [[ ${USG_OPT} =~ ${IS_NUM} ]] ; then
       local USG_OPT=4
   fi
+  if ! [[ ${USG_FLG} =~ ${IS_NUM} ]] ; then
+      local USG_FLG=2
+  fi
   if ! [[ ${USG_ARG} =~ ${IS_NUM} ]] ; then
       local USG_ARG=10
   fi
-  local USG_DESC=$((${USG_OPT} + ${USG_ARG} + 4))
+  local USG_DESC=$((${USG_OPT} + ${USG_FLG} + ${USG_ARG} + 2))
   local USG_CONFDEPVAR=2
   local INFOS_TO_GO
   local i
@@ -865,7 +870,7 @@ usage () {
           echo -e "\rUsage:\n  $(_opt "${ARG1}") $(_info "${ARG2}" i)"
           ;;
       opt)
-          echo -e "\r$(printf "%${USG_OPT}s")$(_opt "${ARG1}") $(_arg "$(printf "%-${USG_ARG}s" "${ARG2}")") ${ARG3}"
+          echo -e "\r$(printf "%${USG_OPT}s")$(_opt "$(printf "%-${USG_FLG}s" "${ARG1}")") $(_arg "$(printf "%-${USG_ARG}s" "${ARG2}")") ${ARG3}"
           ;;
       sect)
           echo -e "\r$(printf "%${USG_CONFDEPVAR}s")$(_underscore "${ARG1}"):"
@@ -1494,6 +1499,7 @@ $(usage usage "${0##*/}" "[OPTIONS]")
     $(usage opt "-l" ""       "link script to $(path_exists -d "${SCRIPTLINKPATH}" show)")
     $(usage opt "-e" ""       "use $(_path "#!/bin/bash") shebang")
                               $(usage default "$(_path "${SHEBANG}")")
+    $(usage opt "-S" ""       "use only short \"-o\" options instead of \"--options\" by default")
 
     $(usage opt "-I" ""       "only initialize basic shared files in dir as set by $(_opt "-s")")
     $(usage opt "-V" ""       "show version information of basic shared files available in this script")
@@ -1767,13 +1773,22 @@ if ${WITHCONFIG} ; then
   CONFEDIT="--config"
   CONFPROFILEHAVE="
 # HAVE_PROFILE=false"
-  CONFPROFILEUSAGE="
+  CONFPROFILEOPTSET="p:"
+  if $SHORTOPTIONS ; then
+    CONFPROFILEOPTPREFIX="p"
+    CONFPROFILEUSAGE="
         \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
                 \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
                 \${PROFILES}\n"
-  CONFPROFILEOPTSET="p:"
+  else
+    CONFPROFILEOPTPREFIX="--prefix|--prefix=*"
+    CONFPROFILEUSAGE="
+        \$(usage opt \"--prefix\" \"<profile>\" \"select profile:\")
+                \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
+                \${PROFILES}\n"
+  fi
   CONFPROFILEOPTCHECK="
-        p) CONFPROFILE=\"\${OPTARG}\" >&2
+        ${CONFPROFILEOPTPREFIX}) CONFPROFILE=\"\${OPTARG}\" >&2
            [[ \" \${!PRF_EXAMPLEARRAY[@]} \" =~ \" \${CONFPROFILE} \" ]] || error \"invalid profile: \${CONFPROFILE}\"
            HAVE_PROFILE=true >&2
            ;;"
@@ -1811,6 +1826,158 @@ if ${WITHLICENSE} ; then
   LICSTUB="${LICSTUB//__LIC_AUTHOR_EMAIL__/${LIC_AUTHOR_EMAIL}}"
 else
   LICSTUB=""
+fi
+
+if $SHORTOPTIONS ; then
+USAGESECTION="if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
+  USG_OPT=4  # spaces before option names
+  USG_FLG=4  # number of characters reserved for option names
+  USG_ARG=10 # width of option argument names
+  echo -e \"
+\$(usage usage \"\${0##*/}\" \"[OPTIONS]\")
+
+    \$(usage sect \"OPTIONS\")${CONFPROFILEUSAGE}
+        \$(usage opt \"-e\" \"<path>\" \"example option\")
+                \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
+        \$(usage opt \"-h\" \"\" \"call ~/bin/bash_hints.sh\")
+
+        \$(usage opt \"-D\" \"\" \"enable debug mode for more information from functions\")
+
+    \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\" \"--function\")
+\"
+  # see also \$(usage info ...) and \$(usage par ...)
+  exit 0
+fi"
+OPTIONSECTION="# get the options
+while getopts \":${CONFPROFILEOPTSET}e:hD\" OPT; do
+    case \$OPT in${CONFPROFILEOPTCHECK}
+        e) EXAMPLE=true >&2
+           USERHOME=\"\${OPTARG}\" >&2
+           ;;
+        h) BASHHINTS=true >&2
+           ;;
+        D) DEBUG=true >&2
+           ;;
+        \\?)
+           error \"Invalid option: \$(_bold \"-\${OPTARG}\")\" >&2
+           ;;
+        :)
+           error \"Option \$(_bold \"-\${OPTARG}\") requires an argument.\" >&2
+           ;;
+    esac
+done
+
+## alternative for using long and short options
+# needs_optarg () {
+#   [ \"\$2\" = \"\" ] && error \"Option \$(_bold \"\$1\") requires an argument.\" 1>&2
+#   echo \"\$2\"
+# }
+# skipshift=
+# while [ \$# -gt 0 ]; do
+#     case \"\$1\" in
+#         --*=*) OPTARG=\$(echo \"\$1\" | sed 's/[-_a-zA-Z0-9]*=//') >&2
+#                ;;
+#         *)     OPTARG=\"\" >&2
+#                ;;
+#     esac
+#
+#     case \"\$1\" in${CONFPROFILEOPTCHECK}
+#         --example|--example=*)
+#           example=\"yes\" >&2
+#           USERHOME=\"\$(needs_optarg \"\$1\" \"\${OPTARG}\")\" >&2
+#           ;;
+#         --hints|-h)
+#           BASHHINTS=true >&2
+#           ;;
+#         --debug)
+#           DEBUG=true >&2
+#           ;;
+#         --*|-*)
+#           error \"Invalid option: \$(_bold \"\$1\")\" >&2
+#           ;;
+#         *)
+#           skipshift=1
+#           break
+#           ;;
+#     esac
+#     [ -z \"\$skipshift\" ] && shift
+# done
+"
+else
+USAGESECTION="if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
+  USG_OPT=4  # spaces before option names
+  USG_FLG=10  # number of characters reserved for option names
+  USG_ARG=10 # width of option argument names
+  echo -e \"
+\$(usage usage \"\${0##*/}\" \"[OPTIONS]\")
+
+    \$(usage sect \"OPTIONS\")${CONFPROFILEUSAGE}
+        \$(usage opt \"--example\" \"=<path>\" \"example option\")
+                \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
+        \$(usage opt \"--hints|-h\" \"\" \"call ~/bin/bash_hints.sh\")
+
+        \$(usage opt \"--debug\" \"\" \"enable debug mode for more information from functions\")
+
+    \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\" \"--function\")
+\"
+  # see also \$(usage info ...) and \$(usage par ...)
+  exit 0
+fi"
+OPTIONSECTION="# get the options
+needs_optarg () {
+  [ \"\$2\" = \"\" ] && error \"Option \$(_bold \"\$1\") requires an argument.\" 1>&2
+  echo \"\$2\"
+}
+skipshift=
+while [ \$# -gt 0 ]; do
+    case \"\$1\" in
+        --*=*) OPTARG=\$(echo \"\$1\" | sed 's/[-_a-zA-Z0-9]*=//') >&2
+               ;;
+        *)     OPTARG=\"\" >&2
+               ;;
+    esac
+
+    case \"\$1\" in${CONFPROFILEOPTCHECK}
+        --example|--example=*)
+          example=\"yes\" >&2
+          USERHOME=\"\$(needs_optarg \"\$1\" \"\${OPTARG}\")\" >&2
+          ;;
+        --hints|-h)
+          BASHHINTS=true >&2
+          ;;
+        --debug)
+          DEBUG=true >&2
+          ;;
+        --*|-*)
+          error \"Invalid option: \$(_bold \"\$1\")\" >&2
+          ;;
+        *)
+          skipshift=1
+          break
+          ;;
+    esac
+    [ -z \"\$skipshift\" ] && shift
+done
+
+## alternative for using short options
+# while getopts \":${CONFPROFILEOPTSET}e:hD\" OPT; do
+#     case \$OPT in${CONFPROFILEOPTCHECK}
+#         e) EXAMPLE=true >&2
+#            USERHOME=\"\${OPTARG}\" >&2
+#            ;;
+#         h) BASHHINTS=true >&2
+#            ;;
+#         D) DEBUG=true >&2
+#            ;;
+#         \\?)
+#            error \"Invalid option: \$(_bold \"-\${OPTARG}\")\" >&2
+#            ;;
+#         :)
+#            error \"Option \$(_bold \"-\${OPTARG}\") requires an argument.\" >&2
+#            ;;
+#     esac
+# done
+"
 fi
 
 mkmissingdir "${SCRIPTPATH}"
@@ -1858,44 +2025,11 @@ edit_file \"\${0}\" \"--edit\" \"\$1\" \"unable to edit script file!\"
 
 
 ### BEGIN USAGE SECTION ###
-if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
-  USG_OPT=4  # spaces before option names
-  USG_ARG=10 # width of option argument names
-  echo -e \"
-\$(usage usage \"\${0##*/}\" \"[OPTIONS]\")
-
-    \$(usage sect \"OPTIONS\")${CONFPROFILEUSAGE}
-        \$(usage opt \"-e\" \"<path>\" \"example option\")
-                \$(usage default \"\$(path_exists -d \"\${USERHOME}\" show)\")
-        \$(usage opt \"-h\" \"\" \"call ~/bin/bash_hints.sh\")
-
-        \$(usage opt \"-D\" \"\" \"enable debug mode for more information from functions\")
-
-    \$(usage conf \"${CONFINFO}\" \"--version\" \"--dependencies\" \"${CONFEDIT}\" \"--edit\" \"--function\")
-\"
-# see also \$(usage info ...) and \$(usage par ...)
-  exit 0
-fi
+${USAGESECTION}
 ### END USAGE SECTION ###
 
-# get the options
-while getopts \":${CONFPROFILEOPTSET}e:hD\" OPT; do
-    case \$OPT in${CONFPROFILEOPTCHECK}
-        e) EXAMPLE=true >&2
-           USERHOME=\"\${OPTARG}\" >&2
-           ;;
-        h) BASHHINTS=true >&2
-           ;;
-        D) DEBUG=true >&2
-           ;;
-        \\?)
-           error \"Invalid option: \$(_bold \"-\${OPTARG}\")\" >&2
-           ;;
-        :)
-           error \"Option \$(_bold \"-\${OPTARG}\") requires an argument.\" >&2
-           ;;
-    esac
-done
+${OPTIONSECTION}
+
 
 ### BEGIN SCRIPT BODY ###
 ## run stuff cleanly in the background
