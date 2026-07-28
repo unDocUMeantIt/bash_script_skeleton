@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2026-07-21"
+SCRIPT_VERSION="2026-07-28"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -1030,22 +1030,25 @@ check_tool () {
   [[ "$1" =~ ^(-h|--help)$ || "$1" == "" ]] && {
     echo "checks if the given tool is available
 
-    usage: check_tool [tool] [path]
+    usage: check_tool [tool] [path] (warnonly)
 
-    [tool]: name of tool to look up
-    [path]: path to tool
+    [tool]:     name of tool to look up
+    [path]:     path to tool
+    (warnonly): the keyword \"warnonly\" to return warnings instead of errors
+                in both cases, a return code of 1 is given
 
     if there's only one parameter, \"which\" is called and the result returned
-    if there's two, the functions exits silently if there are no errors
+    if there's at least two, the functions exits silently if there are no errors
     "
     return;
   }
   [[ "$1" =~ ^(-v|--version)$ ]] && {
-    echo "3"
+    echo "4"
     return;
   }
   local TNAME="$1"
   local TPATH="$2"
+  local TWARN="$3"
   if [ "${TPATH}" != "" ] ; then
     TOOL="${TPATH}"
   else
@@ -1054,6 +1057,13 @@ check_tool () {
   if [ -x "${TOOL}" ] ; then
     if [ "${TPATH}" == "" ] ; then
       echo "\"${TOOL}\""
+    fi
+  elif [ "${TWARN}" != "" ] ; then
+    if [ "${TWARN}" != "warnonly" ] ; then
+      error "check_tool only recognizes \"warnonly\" as third option!"
+    else
+      warning "can't find ${TNAME}, please check your configuration!"
+      return 1
     fi
   else
     error "can't find ${TNAME}, please check your configuration!"
