@@ -15,7 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with bash_script_skeleton.sh.  If not, see <http://www.gnu.org/licenses/>.
 
-SCRIPT_VERSION="2026-07-28"
+SCRIPT_VERSION="2026-08-02"
 [[ "$1" =~ (--version) ]] && { 
   echo "${SCRIPT_VERSION}";
   exit 0
@@ -1790,12 +1790,22 @@ if ${WITHCONFIG} ; then
         \$(usage opt \"-p\" \"<profile>\" \"select profile:\")
                 \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
                 \${PROFILES}\n"
+    CONFPROFILEOPTCHECKALT="
+#          --prefix|--prefix=*) CONFPROFILE=\"\${OPTARG}\" >&2
+#            [[ \" \${!PRF_EXAMPLEARRAY[@]} \" =~ \" \${CONFPROFILE} \" ]] || error \"invalid profile: \${CONFPROFILE}\"
+#            HAVE_PROFILE=true >&2
+#            ;;"
   else
     CONFPROFILEOPTPREFIX="--prefix|--prefix=*"
     CONFPROFILEUSAGE="
         \$(usage opt \"--prefix\" \"<profile>\" \"select profile:\")
                 \$(usage note \"note:\" \"if only one profile is defined, it will be used by default!\")
                 \${PROFILES}\n"
+    CONFPROFILEOPTCHECKALT="
+#          p) CONFPROFILE=\"\${OPTARG}\" >&2
+#            [[ \" \${!PRF_EXAMPLEARRAY[@]} \" =~ \" \${CONFPROFILE} \" ]] || error \"invalid profile: \${CONFPROFILE}\"
+#            HAVE_PROFILE=true >&2
+#            ;;"
   fi
   CONFPROFILEOPTCHECK="
         ${CONFPROFILEOPTPREFIX}) CONFPROFILE=\"\${OPTARG}\" >&2
@@ -1826,6 +1836,7 @@ else
   CONFPROFILEUSAGE=""
   CONFPROFILEOPTSET=""
   CONFPROFILEOPTCHECK=""
+  CONFPROFILEOPTCHECKALT=""
   CONFPROFILESELECT=""
 fi
 
@@ -1891,7 +1902,7 @@ done
 #                ;;
 #     esac
 #
-#     case \"\$1\" in${CONFPROFILEOPTCHECK}
+#     case \"\$1\" in${CONFPROFILEOPTCHECKALT}
 #         --example|--example=*)
 #           example=\"yes\" >&2
 #           USERHOME=\"\$(needs_optarg \"\$1\" \"\${OPTARG}\")\" >&2
@@ -1916,7 +1927,7 @@ done
 else
 USAGESECTION="if [[ \"\$1\" =~ ^(-h|--help)\$ || \"\$1\" == \"\" ]] ; then
   USG_OPT=4  # spaces before option names
-  USG_FLG=10  # number of characters reserved for option names
+  USG_FLG=10 # number of characters reserved for option names
   USG_ARG=10 # width of option argument names
   echo -e \"
 \$(usage usage \"\${0##*/}\" \"[OPTIONS]\")
@@ -1971,7 +1982,7 @@ done
 
 ## alternative for using short options
 # while getopts \":${CONFPROFILEOPTSET}e:hD\" OPT; do
-#     case \$OPT in${CONFPROFILEOPTCHECK}
+#     case \$OPT in${CONFPROFILEOPTCHECKALT}
 #         e) EXAMPLE=true >&2
 #            USERHOME=\"\${OPTARG}\" >&2
 #            ;;
