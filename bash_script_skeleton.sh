@@ -2016,7 +2016,7 @@ ${LICSTUB}
 ## initialize hard coded variables here
 # EXAMPLE=false
 # BASHHINTS=false
-# DEBUG=false${CONFPROFILEHAVE}
+DEBUG=false${CONFPROFILEHAVE}
 
 # DATE=\"\$(date +%Y-%m-%d_%H-%M-%S)\"
 
